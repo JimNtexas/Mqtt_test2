@@ -5,12 +5,10 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.widget.Button
-import org.eclipse.paho.android.service.MqttAndroidClient
-import org.eclipse.paho.client.mqttv3.IMqttActionListener
-import org.eclipse.paho.client.mqttv3.IMqttToken
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient
+import org.eclipse.paho.client.mqttv3.MqttClient
 import org.eclipse.paho.client.mqttv3.MqttException
-
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 
 
 class MainActivity : AppCompatActivity() {
@@ -22,8 +20,8 @@ class MainActivity : AppCompatActivity() {
     internal val topic = "car_command" as String
     val clientId = MqttAsyncClient.generateClientId()
     val context: Context =Mqtt2app.getAppContext()
-    val client = MqttAndroidClient(context, broker,
-            clientId)
+    val persistence = MemoryPersistence()
+    val client = MqttClient(broker, clientId, persistence)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,29 +36,16 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "client connected: " + client.isConnected())
 
         }
-
     }
 
     fun mqttConnect() {
-        if(client == null) {
-            Log.d(TAG, "Client was null, could not connect!")
-            return
-        }
+
         try {
-            client.subscribe(topic,1);
-            val token = client.connect()
-            token.actionCallback = object : IMqttActionListener {
-                override fun onSuccess(asyncActionToken: IMqttToken) {
-                    // We are connected
-                    Log.d(TAG, "onSuccess")
-                }
-
-                override fun onFailure(asyncActionToken: IMqttToken, exception: Throwable) {
-                    // Something went wrong e.g. connection timeout or firewall problems
-                    Log.d(TAG, "onFailure")
-
-                }
-            }
+            client.setCallback(MqttEventCallback())
+           // val options =  MqttConnectOptions()
+            client.setCallback(MqttEventCallback())
+            client.connect()
+            client.subscribe("car_connect",1);
         } catch (e: MqttException) {
             e.printStackTrace()
         }
